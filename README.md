@@ -133,3 +133,37 @@ Learn more about the power of Turborepo:
 - [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
 - [Configuration Options](https://turborepo.dev/docs/reference/configuration)
 - [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+
+##
+lullaby-ui-core
+│
+├─ machines/
+│   ├─ select
+│   ├─ combobox
+│   └─ menu
+│
+├─ primitives/   
+│   ├─ machine
+│   ├─ focus
+│   ├─ collection
+│   └─ controllable
+│
+└─ adapters/
+    ├─ react
+    ├─ angular
+    └─ vue
+
+##
+packages/
+├── core                ← machines
+│
+├── interactions        ← focus, keyboard, ids, aria utils
+│
+├── adapters/
+│   ├── react
+│   ├── vue
+│   └── solid
+│
+├── system              ← tokens + design primitives
+│
+└── ui                  ← components ready to use
