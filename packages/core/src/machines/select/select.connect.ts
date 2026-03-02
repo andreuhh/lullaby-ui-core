@@ -21,7 +21,11 @@ function defaultMergeProps<P extends AnyProps>(...all: Array<P | undefined>): P 
             const value = props[key]
 
             // merge event handlers: onKeyDown, onClick, etc.
-            if (key.startsWith("on") && typeof value === "function" && typeof result[key] === "function") {
+            if (
+                key.startsWith("on") &&
+                typeof value === "function" &&
+                typeof result[key] === "function"
+            ) {
                 const prev = result[key] as EventHandler
                 const next = value as EventHandler
                 result[key] = (event: unknown) => {
@@ -43,49 +47,68 @@ export function connectSelect<T>(
 ) {
     const { mergeProps } = normalize
 
+    let modality: "keyboard" | "pointer" = "pointer"
+
     function getTriggerProps(userProps: AnyProps = {}) {
         const internal: AnyProps = {
             role: "combobox",
             "aria-expanded": machine.api.isOpen,
             "aria-haspopup": "listbox",
             tabIndex: 0,
+
             onKeyDown: (e: any) => {
+                modality = "keyboard"
+
                 switch (e.key) {
                     case "ArrowDown":
+                        e.preventDefault()
                         machine.send({ type: "ARROW_DOWN" })
                         break
+
                     case "ArrowUp":
+                        e.preventDefault()
                         machine.send({ type: "ARROW_UP" })
                         break
+
                     case "Enter":
                     case " ":
+                        e.preventDefault()
                         machine.send({ type: "TOGGLE" })
                         break
+
                     case "Escape":
+                        e.preventDefault()
                         machine.send({ type: "CLOSE" })
                         break
+
                     default:
-                        // simple typeahead: only letters/numbers for now
                         if (typeof e.key === "string" && e.key.length === 1) {
                             machine.send({ type: "TYPEAHEAD", key: e.key })
                         }
                 }
             },
-            onClick: () => {
+
+            onClick: (e: any) => {
+                // Ignora click generati da tastiera (Enter/Space su button)
+                if (e?.detail === 0) return
+
+                modality = "pointer"
                 machine.send({ type: "TOGGLE" })
             },
+
             onBlur: () => {
                 machine.send({ type: "BLUR" })
-            }
+            },
         }
 
         return mergeProps(internal, userProps)
     }
 
+    // ✅ RE-ADD THIS (missing in your current file)
     function getListboxProps(userProps: AnyProps = {}) {
         const internal: AnyProps = {
             role: "listbox",
-            tabIndex: -1
+            tabIndex: -1,
         }
 
         return mergeProps(internal, userProps)
@@ -100,20 +123,22 @@ export function connectSelect<T>(
             "aria-selected": machine.context.selectedIndex === index,
             "aria-disabled": disabled || undefined,
             tabIndex: machine.context.highlightedIndex === index ? 0 : -1,
-            onMouseMove: () => {
+
+            onPointerMove: () => {
+                if (modality === "keyboard") return
                 if (!disabled) machine.send({ type: "HIGHLIGHT", index })
             },
+            onPointerDown: () => {
+                modality = "pointer"
+            },
             onClick: () => {
+                modality = "pointer"
                 if (!disabled) machine.send({ type: "SELECT", index })
-            }
+            },
         }
 
         return mergeProps(internal, userProps)
     }
 
-    return {
-        getTriggerProps,
-        getListboxProps,
-        getOptionProps
-    }
+    return { getTriggerProps, getListboxProps, getOptionProps }
 }
